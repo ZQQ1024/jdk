@@ -1,6 +1,6 @@
 FROM centos:node
 
-LABEL name="CentOS7 with JDK8"
+LABEL maintainer "qiangqiang.zhou@changhong.com"
 
 ENV JAVA_VERSION 8
 ENV JAVA_FOLDER_NAME jdk1.8.0_144
