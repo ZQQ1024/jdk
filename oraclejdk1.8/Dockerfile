@@ -1,36 +1,43 @@
-FROM centos:node
 
+FROM centos:jdk1.8
 LABEL maintainer "qiangqiang.zhou@changhong.com"
 
-#添加用户，UID、GID为4001
-RUN groupadd user_grp -g 4001 && \
-useradd -u 4001 --home-dir /srv/zqq --create-home --system --no-user-group zqq && \
-usermod -g user_grp zqq && \
-ln -s /srv/zqq /var/lib/zqq && \
-chown -R zqq:user_grp /var/lib/zqq
+#不要下载到那些root权限的目录下面,下载不动可以到官网换一个链接
+RUN curl -O  http://mirrors.tuna.tsinghua.edu.cn/apache/tomcat/tomcat-8/v8.5.20/bin/apache-tomcat-8.5.20.tar.gz && tar -xf apache-tomcat-8.5.20.tar.gz
 
-#建议修改为其他非root目录
-WORKDIR /srv/zqq
+ARG tomcat=/srv/zqq/tomcat
+ENV CATALINA_HOME=$tomcat \
+PATH=$PATH:$tomcat/bin:$tomcat/scripts \
+JAVA_OPTS="-Xms512m -Xmx2048m" \
+TOMCAT_VER=apache-tomcat-8.5.20
 
-COPY java-installer.sh .
-RUN chmod +x java-installer.sh && \
-chown -R zqq:user_grp java-installer.sh
 
-RUN ./java-installer.sh && \
-rm java-installer.sh
+RUN mv apache-tomcat-8.5.20 ${CATALINA_HOME} && chmod +x ${CATALINA_HOME}/bin/*sh
 
-#设置一个Dockerfile内部使用的变量
-ARG JAVA=/srv/zqq/jdk1.8.0_144
+#settings
+#去除webapps下面的示例文档和管理入口，只留ROOT
+Run rm -rf ${CATALINA_HOME}/webapps/* && \
+mkdir -p ${CATALINA_HOME}/webapps/ROOT
 
-#同时设置多个环境变量，相互不可见，使用上面的变量
-ENV JAVA_VERSION=8 \ 
-JAVA_HOME=$JAVA  \ 
-JRE_HOME=$JAVA/jre \ 
-CLASSPATH=.:$JAVA/lib:$JAVA/jre/lib \ 
-PATH=$PATH:$JAVA/bin
+USER root
 
+#部署了以个web项目
+COPY JDBCTest.war ${CATALINA_HOME}/webapps/
+
+#脚本和安全配置（隐藏版本信息）
+COPY scripts/ ${CATALINA_HOME}/scripts/ 
+COPY ./settings/conf/* ${CATALINA_HOME}/conf/
+COPY ./settings/ServerInfo/ ${CATALINA_HOME}/lib/
+
+RUN chown -R zqq:user_grp ${CATALINA_HOME} && \
+chmod +x ${CATALINA_HOME}/scripts/*.sh
+
+#以非root运行tomcat
 USER zqq
-#RUN /srv/zqq/java-installer.sh && \
-#rm /srv/zqq/java-installer.sh
 
-CMD ["/bin/bash"]   
+#检查健康状态
+HEALTHCHECK CMD curl --fail http://localhost:8080 || exit 1
+
+EXPOSE 8080 8009
+CMD ["tomcat/scripts/tomcat-boot.sh"]
+
