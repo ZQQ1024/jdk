@@ -2,21 +2,35 @@ FROM centos:node
 
 LABEL maintainer "qiangqiang.zhou@changhong.com"
 
-USER root
-ENV JAVA_VERSION=8
-ENV JAVA_FOLDER_NAME=jdk1.8.0_144 
-ENV JAVA_HOME=/srv/zqq/$JAVA_FOLDER_NAME
-ENV JRE_HOME=/srv/zqq/$JAVA_FOLDER_NAME/jre
-ENV CLASSPATH=.:$JAVA_HOME/lib:$JAVA_HOME/jre/lib
-ENV PATH=$PATH:$JAVA_HOME/bin
+#添加用户，UID、GID为4001
+RUN groupadd user_grp -g 4001 && \
+useradd -u 4001 --home-dir /srv/zqq --create-home --system --no-user-group zqq && \
+usermod -g user_grp zqq && \
+ln -s /srv/zqq /var/lib/zqq && \
+chown -R zqq:user_grp /var/lib/zqq
 
-COPY java-installer.sh /srv/zqq/
-RUN chmod +x /srv/zqq/java-installer.sh && \
-chown -R zqq:user_grp /srv/zqq/java-installer.sh
+#建议修改为其他非root目录
+WORKDIR /srv/zqq
+
+COPY java-installer.sh .
+RUN chmod +x java-installer.sh && \
+chown -R zqq:user_grp java-installer.sh
+
+RUN ./java-installer.sh && \
+rm java-installer.sh
+
+#设置一个Dockerfile内部使用的变量
+ARG JAVA=/srv/zqq/jdk1.8.0_144
+
+#同时设置多个环境变量，相互不可见，使用上面的变量
+ENV JAVA_VERSION=8 \ 
+JAVA_HOME=$JAVA  \ 
+JRE_HOME=$JAVA/jre \ 
+CLASSPATH=.:$JAVA/lib:$JAVA/jre/lib \ 
+PATH=$PATH:$JAVA/bin
 
 USER zqq
+#RUN /srv/zqq/java-installer.sh && \
+#rm /srv/zqq/java-installer.sh
 
-RUN /srv/zqq/java-installer.sh && \
-rm /srv/zqq/java-installer.sh
-
-#CMD ["/bin/bash"]   
+CMD ["/bin/bash"]   

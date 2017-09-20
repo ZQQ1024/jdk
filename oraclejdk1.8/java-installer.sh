@@ -20,8 +20,8 @@ if [ "${CHECKSUM}" != "${DOWNLOADED_CHECKSUM}" ]; then
         exit 1
 fi
 
-tar -xzf /tmp/jdk.tar.gz -C /srv/zqq
-chown -R zqq:user_grp ${JAVA_HOME}
+tar -xzf /tmp/jdk.tar.gz -C /srv/zqq/
+chown -R zqq:user_grp /srv/zqq/jdk1.8.0_144
 
 rm /tmp/jdk.tar.gz
 
