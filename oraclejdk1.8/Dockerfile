@@ -2,7 +2,7 @@ FROM centos:node
 
 LABEL maintainer "qiangqiang.zhou@changhong.com"
 
-#添加用户，UID、GID为4001
+#添加用户，UID、GID为4001,home的路径为/srv/zqq
 RUN groupadd user_grp -g 4001 && \
 useradd -u 4001 --home-dir /srv/zqq --create-home --system --no-user-group zqq && \
 usermod -g user_grp zqq && \
@@ -30,7 +30,5 @@ CLASSPATH=.:$JAVA/lib:$JAVA/jre/lib \
 PATH=$PATH:$JAVA/bin
 
 USER zqq
-#RUN /srv/zqq/java-installer.sh && \
-#rm /srv/zqq/java-installer.sh
 
 CMD ["/bin/bash"]   
